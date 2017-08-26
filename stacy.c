@@ -1790,13 +1790,13 @@ sig_head *op_sine_synth (sig_head *in[], void **state)
 				for (a = 0; a < PSIZE; a++)
 				{
 					s_out[a] += sin ((t * 2 * M_PI) * freq);
-					t += (s_offset[a] + 1.0) / SAMPLE_RATE;
+					t += exp (s_offset[a]) / SAMPLE_RATE;
 				}
 			}
 		}
 		
 		for (a = 0; a < PSIZE; a++)
-			ds->time += (s_offset[a] + 1.0) / SAMPLE_RATE;
+			ds->time += exp (s_offset[a]) / SAMPLE_RATE;
 	}
 	
 	return out;
@@ -1857,13 +1857,13 @@ sig_head *op_square_synth (sig_head *in[], void **state)
 				for (a = 0; a < PSIZE; a++)
 				{
 					s_out[a] += (sin ((t * 2 * M_PI) * freq) > 0)?1:-1;
-					t += (s_offset[a] + 1.0) / SAMPLE_RATE;
+					t += exp (s_offset[a]) / SAMPLE_RATE;
 				}
 			}
 		}
 		
 		for (a = 0; a < PSIZE; a++)
-			ds->time += (s_offset[a] + 1.0) / SAMPLE_RATE;
+			ds->time += exp (s_offset[a]) / SAMPLE_RATE;
 	}
 	
 	return out;
@@ -1924,13 +1924,13 @@ sig_head *op_sawtooth_synth (sig_head *in[], void **state)
 				for (a = 0; a < PSIZE; a++)
 				{
 					s_out[a] += ((t * freq) - floor (t * freq)) * 2 - 1;
-					t += (s_offset[a] + 1.0) / SAMPLE_RATE;
+					t += exp (s_offset[a]) / SAMPLE_RATE;
 				}
 			}
 		}
 		
 		for (a = 0; a < PSIZE; a++)
-			ds->time += (s_offset[a] + 1.0) / SAMPLE_RATE;
+			ds->time += exp (s_offset[a]) / SAMPLE_RATE;
 	}
 	
 	return out;
@@ -2073,7 +2073,7 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 			}
 		}
 		
-		speed = s_offset[0] + 1.0;
+		speed = exp (s_offset[0]);
 		start = ds->time + ((double) PSIZE / SAMPLE_RATE);
 		deadline = ds->time + ((double) PSIZE / SAMPLE_RATE) * 2;
 		
@@ -2258,7 +2258,7 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 			}
 		}
 		
-		speed = s_offset[0] + 1.0;
+		speed = exp (s_offset[0]);
 		start = ds->time + ((double) PSIZE / SAMPLE_RATE);
 		deadline = ds->time + ((double) PSIZE / SAMPLE_RATE) * 2;
 		
