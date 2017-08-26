@@ -491,7 +491,7 @@ void user_init (void)
 		snd_pcm_hw_params_set_channels (handle, params, 2);
 		snd_pcm_hw_params_set_rate (handle, params, SAMPLE_RATE, 0);
 		snd_pcm_hw_params_set_period_size (handle, params, PSIZE, 0);
-		snd_pcm_hw_params_set_buffer_size (handle, params, PSIZE*2);
+		snd_pcm_hw_params_set_buffer_size (handle, params, PSIZE*4);
 		snd_pcm_hw_params (handle, params);
 		
 		audio_ok = 1;
