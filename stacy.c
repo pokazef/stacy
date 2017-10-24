@@ -671,6 +671,36 @@ sig_head *op_delay (sig_head *in[], void **state)
 	return out;
 }
 
+sig_head *op_delay_sync (sig_head *in[], void **state)
+{
+	sig_head *out;
+	delay_state *ds;
+	int size;
+	int a;
+
+	if (! *state)
+	{
+		*state = malloc (sizeof (delay_state));
+		ds = *state;
+		ds->pos = 0;
+		for (a = 0; a < DELAY; a++)
+			ds->buf[a] = sig_error();
+	}
+
+	ds = *state;
+
+	out = ds->buf[ds->pos];
+	if (ds->pos == 0)
+		for (a = 0; a < DELAY; a++)
+			ds->buf[a] = sig_dup (in[0]);
+
+	ds->pos++;
+	if (ds->pos >= DELAY)
+		ds->pos = 0;
+
+	return out;
+}
+
 //==============================================================================
 // Cartesian product components (AKA "ordered pair", "multiplexer")
 
@@ -1696,6 +1726,57 @@ sig_head *op_note_wrap (sig_head *in[], void **state)
 	return out;
 }
 
+sig_head *op_game_of_life (sig_head *in[], void **state)
+{
+	sig_head *out;
+	sig_t_ui s_in, s_out;
+	int size;
+	int x, y, num;
+
+	if (in[0]->type != SIG_UI)
+	{
+		out = sig_error();
+	}
+	else
+	{
+		size = sizeof (sig_head) + 8 * sizeof (char[8]);
+		out = malloc (size);
+		out->type = SIG_UI;
+		out->size = size;
+
+		s_out = (void *) (out + 1);
+		s_in = (void *) (in[0] + 1);
+
+		bzero (s_out, 8 * sizeof (char[8]));
+
+		for (x=0; x<8; x++) for (y=0; y<8; y++)
+		{
+			num = 0;
+			num += s_in[(x+0)&7][(y+1)&7];
+			num += s_in[(x+1)&7][(y+1)&7];
+			num += s_in[(x+1)&7][(y+0)&7];
+			num += s_in[(x+1)&7][(y-1)&7];
+			num += s_in[(x+0)&7][(y-1)&7];
+			num += s_in[(x-1)&7][(y-1)&7];
+			num += s_in[(x-1)&7][(y+0)&7];
+			num += s_in[(x-1)&7][(y+1)&7];
+
+			if (s_in[x][y] == 1)
+				if (num == 2 || num == 3)
+					s_out[x][y] = 1;
+				else
+					s_out[x][y] = 0;
+			else
+				if (num == 3)
+					s_out[x][y] = 1;
+				else
+					s_out[x][y] = 0;
+		}
+	}
+
+	return out;
+}
+
 //==============================================================================
 // Synthesis components
 
@@ -2578,6 +2659,11 @@ int main (int argc, char *argv[])
 	comp_table[1][1].num_inputs = 1;
 	comp_table[1][1].op = op_delay;
 	
+	// Synchronous delay
+	comp_table[2][1].empty = 0;
+	comp_table[2][1].num_inputs = 1;
+	comp_table[2][1].op = op_delay_sync;
+
 	// Line 3: Cartesian product
 	// Pair deconstruction
 	comp_table[0][2].empty = 0;
@@ -2645,6 +2731,11 @@ int main (int argc, char *argv[])
 	comp_table[5][4].empty = 0;
 	comp_table[5][4].num_inputs = 1;
 	comp_table[5][4].op = op_note_wrap;
+
+	// Game of Life
+	comp_table[7][4].empty = 0;
+	comp_table[7][4].num_inputs = 1;
+	comp_table[7][4].op = op_game_of_life;
 
 	// Line 6: Synthesizers
 	comp_table[0][5].empty = 0;
