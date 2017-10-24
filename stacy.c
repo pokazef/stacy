@@ -1531,7 +1531,7 @@ sig_head *op_ctrl4 (sig_head *in[], void **state)
 	return out;
 }
 
-sig_head *op_mirrorh (sig_head *in[], void **state)
+sig_head *op_mirror (sig_head *in[], void **state)
 {
 	sig_head *out;
 	sig_t_ui s_in, s_out;
@@ -1555,36 +1555,6 @@ sig_head *op_mirrorh (sig_head *in[], void **state)
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			s_out[x][y] = s_in[7-x][y];
-		}
-	}
-	
-	return out;
-}
-
-sig_head *op_mirrorv (sig_head *in[], void **state)
-{
-	sig_head *out;
-	sig_t_ui s_in, s_out;
-	int size;
-	int x, y;
-	
-	if (in[0]->type != SIG_UI)
-	{
-		out = sig_error();
-	}
-	else
-	{
-		size = sizeof (sig_head) + 8 * sizeof (char[8]);
-		out = malloc (size);
-		out->type = SIG_UI;
-		out->size = size;
-		
-		s_out = (void *) (out + 1);
-		s_in = (void *) (in[0] + 1);
-		
-		for (x=0; x<8; x++) for (y=0; y<8; y++)
-		{
-			s_out[x][y] = s_in[x][7-y];
 		}
 	}
 	
@@ -2659,7 +2629,7 @@ int main (int argc, char *argv[])
 	// mirror
 	comp_table[0][4].empty = 0;
 	comp_table[0][4].num_inputs = 1;
-	comp_table[0][4].op = op_mirrorh;
+	comp_table[0][4].op = op_mirror;
 
 	// toggle
 	comp_table[1][4].empty = 0;
@@ -2675,11 +2645,6 @@ int main (int argc, char *argv[])
 	comp_table[5][4].empty = 0;
 	comp_table[5][4].num_inputs = 1;
 	comp_table[5][4].op = op_note_wrap;
-
-	// mirror
-	comp_table[7][4].empty = 0;
-	comp_table[7][4].num_inputs = 1;
-	comp_table[7][4].op = op_mirrorv;
 
 	// Line 6: Synthesizers
 	comp_table[0][5].empty = 0;
