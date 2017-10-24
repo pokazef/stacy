@@ -1,0 +1,12 @@
+Stacy is my ongoing attempt at creating a digital audio workstation
+of a different kind.
+
+It is an interactive Linux application that is controlled exclusively
+through a rather minimal user interface: a square grid of back-lit
+rubber buttons. There's no screen, no keyboard and no mouse involved.
+
+This application allows its user to manipulate various signals
+(audio and other) in real-time through the interactive specification
+of a program (or circuit) in a visual programming language.
+
+For more informations, see http://www.corbac.com/page44.html
