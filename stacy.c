@@ -42,7 +42,7 @@
 
 // ALSA
 snd_seq_t *seq;
-int a1port, a2port;
+int ports[4];
 snd_seq_event_t *evp, aev;
 
 int input[19][9];
@@ -259,13 +259,9 @@ button_evt *get_input (void)
 	}
 	else return NULL;
 
-//	for (pad=0; pad<2; pad++)
-//		if (evp->dest.port == ports[pad])
-//			break;
-
-	pad = 0;
-	if (evp->dest.port == a1port) pad = 0;
-	if (evp->dest.port == a2port) pad = 1;
+	for (pad=0; pad<2; pad++)
+		if (evp->dest.port == ports[pad])
+			break;
 
 	switch (pad)
 	{
@@ -312,7 +308,7 @@ void update_output (void)
 				if (y != 0)
 				{
 		        	snd_seq_ev_set_controller (&aev, 0, 112-y, output[x][y]);
-					snd_seq_ev_set_source (&aev, a2port);
+					snd_seq_ev_set_source (&aev, ports[1]);
 					snd_seq_event_output (seq, &aev);
 				}
 			}
@@ -324,7 +320,7 @@ void update_output (void)
 				note = array2pad (pos);
 				snd_seq_ev_set_noteon (&aev, 0, note, output[x][y]);
 
-				snd_seq_ev_set_source (&aev, a2port);
+				snd_seq_ev_set_source (&aev, ports[1]);
 				snd_seq_event_output (seq, &aev);
 			}
 			else if (x > 9)
@@ -334,7 +330,7 @@ void update_output (void)
 					if (x != 18)
 					{
 		        		snd_seq_ev_set_controller (&aev, 0, 104+x-10, output[x][y]);
-						snd_seq_ev_set_source (&aev, a1port);
+						snd_seq_ev_set_source (&aev, ports[0]);
 						snd_seq_event_output (seq, &aev);
 					}
 				}
@@ -346,7 +342,7 @@ void update_output (void)
 					note = array2pad (pos);
 					snd_seq_ev_set_noteon (&aev, 0, note, output[x][y]);
 
-					snd_seq_ev_set_source (&aev, a1port);
+					snd_seq_ev_set_source (&aev, ports[0]);
 					snd_seq_event_output (seq, &aev);
 				}
 			}
@@ -399,31 +395,34 @@ snd_pcm_t *handle;
 void user_init (void)
 {
 	int res;
+	int pad;
+	char *name;
 
 	// MIDI
 	snd_seq_open (&seq, "default", SND_SEQ_OPEN_DUPLEX, 0);
 	snd_seq_set_client_name (seq, "Stacy");
-
-	a1port   = snd_seq_create_simple_port (seq, "Array 1", SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ, SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
-	a2port   = snd_seq_create_simple_port (seq, "Array 2", SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ, SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
 	snd_seq_nonblock (seq, 1);
 
-	snd_seq_connect_from (seq, a1port, 20, 0);
-	snd_seq_connect_to (seq, a1port, 20, 0);
-	snd_seq_connect_from (seq, a2port, 24, 0);
-	snd_seq_connect_to (seq, a2port, 24, 0);
-
-	snd_seq_ev_set_fixed (&aev);
+	snd_seq_ev_set_fixed  (&aev);
 	snd_seq_ev_set_direct (&aev);
-	snd_seq_ev_set_dest (&aev, SND_SEQ_ADDRESS_SUBSCRIBERS, 0);
+	snd_seq_ev_set_dest   (&aev, SND_SEQ_ADDRESS_SUBSCRIBERS, 0);
 
-	// Reset controllers
-	snd_seq_ev_set_controller (&aev, 0, 0, 0);
-	snd_seq_ev_set_source (&aev, a1port);
-	snd_seq_event_output (seq, &aev);
-	snd_seq_ev_set_source (&aev, a2port);
-	snd_seq_event_output (seq, &aev);
-	snd_seq_drain_output (seq);
+	name = malloc (42);
+
+	for (pad=0; pad<2; pad++)
+	{
+		sprintf (name, "Array %d", pad);
+
+		ports[pad] = snd_seq_create_simple_port (seq, name, SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ, SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
+
+		snd_seq_connect_from (seq, ports[pad], 20 + 4 * pad, 0);
+		snd_seq_connect_to   (seq, ports[pad], 20 + 4 * pad, 0);
+
+		// Reset Launchpad
+		snd_seq_ev_set_controller (&aev, 0, 0, 0);
+		snd_seq_ev_set_source (&aev, ports[pad]);
+		snd_seq_event_output (seq, &aev);
+	}
 
 	// Audio
 	snd_pcm_hw_params_t *params;
