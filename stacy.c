@@ -225,16 +225,6 @@ int in_zone (coord c, zone z)
 		return 0;
 }
 
-coord pad2array (int note)
-{
-	coord pos;
-
-	pos.x = note % 16;
-	pos.y = note / 16;
-
-	return pos;
-}
-
 int array2pad (coord pos)
 {
 	return (pos.y * 16) + pos.x;
@@ -242,66 +232,62 @@ int array2pad (coord pos)
 
 button_evt *get_input (void)
 {
-	coord pos;
-	int pushed;
-	int a;
+	int val;
 	int x, y;
+	int px, py;
+	int pad;
 	button_evt *res = NULL;
 	snd_seq_event_t *evp;
 
-	pushed = -1;
+	val = -1;
 
 	snd_seq_event_input (seq, &evp);
 
-	if (evp == NULL)
-		return NULL;
+	if (evp == NULL) return NULL;
 
 	if (evp->type == SND_SEQ_EVENT_CONTROLLER)
 	{
-		if (evp->data.control.value == 127)
-			pushed = 1;
-		else
-			pushed = 0;
-
-		if (evp->dest.port == a1port)
-		{
-			x = 10 + evp->data.control.param - 104;
-			y = 0;
-		}
-		else if (evp->dest.port == a2port)
-		{
-			x = 0;
-			y = 8 - (evp->data.control.param - 104);
-		}
+		val = evp->data.control.value > 0;
+		px = evp->data.control.param - 104;
+		py = 0;
 	}
-
-	if (evp->type == SND_SEQ_EVENT_NOTEON || evp->type == SND_SEQ_EVENT_NOTEOFF)
+	else if (evp->type == SND_SEQ_EVENT_NOTEON)
 	{
-		pushed = evp->data.note.velocity > 0 ? 1 : 0;
-		if (evp->type == SND_SEQ_EVENT_NOTEOFF)
-			pushed = 0;
+		val = evp->data.note.velocity > 0;
+		px = evp->data.note.note % 16;
+		py = evp->data.note.note / 16 + 1;
+	}
+	else return NULL;
 
-		if (evp->dest.port == a1port)
-		{
-			pos = pad2array (evp->data.note.note);
-			x = pos.x + 10;
-			y = pos.y + 1;
-		}
-		else if (evp->dest.port == a2port)
-		{
-			pos = pad2array (evp->data.note.note);
-			x = pos.y+1;
-			y = 8-pos.x;
-		}
+//	for (pad=0; pad<2; pad++)
+//		if (evp->dest.port == ports[pad])
+//			break;
+
+	pad = 0;
+	if (evp->dest.port == a1port) pad = 0;
+	if (evp->dest.port == a2port) pad = 1;
+
+	switch (pad)
+	{
+		case 0:
+			x = py;
+			y = 8 - px;
+			break;
+		case 1:
+			x = 10 + px;
+			y = py;
+			break;
+		default:
+			return NULL;
 	}
 
-	if (pushed >= 0)
+	if (val >= 0)
 	{
 		res = malloc (sizeof (button_evt));
-		// printf ("%d, %d, %d\n", x, y, pushed);
+		// printf ("%d, %d, %d\n", x, y, val);
 		res->p.x = x;
 		res->p.y = y;
-		res->v = pushed;
+		res->v = val;
 	}
 
 	return res;
