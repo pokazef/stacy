@@ -225,11 +225,6 @@ int in_zone (coord c, zone z)
 		return 0;
 }
 
-int array2pad (coord pos)
-{
-	return (pos.y * 16) + pos.x;
-}
-
 button_evt *get_input (void)
 {
 	int val;
@@ -293,66 +288,47 @@ static int output_old[19][9];
 
 void update_output (void)
 {
-	coord pos;
-	int x, y, note;
+	int x, y;
+	int px, py;
+	int color;
+	int pad;
 
 	for (x=0; x<19; x++) for (y=0; y<9; y++)
 	{
 		if (output[x][y] != output_old[x][y])
 		{
-			pos.x = x;
-			pos.y = y;
+			output_old[x][y] = color = output[x][y];
 
-			if (x == 0)
+			pad = x > 9;
+
+			switch (pad)
 			{
-				if (y != 0)
-				{
-		        	snd_seq_ev_set_controller (&aev, 0, 112-y, output[x][y]);
-					snd_seq_ev_set_source (&aev, ports[1]);
-					snd_seq_event_output (seq, &aev);
-				}
+				case 0:
+					px = 8 - y;
+					py = x;
+					break;
+				case 1:
+					px = x - 10;
+					py = y;
+					break;
 			}
-			else if (x < 9)
+
+			if (py == 0 && px >= 0 && px <= 7)
 			{
-				pos.x = 8 - y;
-				pos.y = x - 1;
-
-				note = array2pad (pos);
-				snd_seq_ev_set_noteon (&aev, 0, note, output[x][y]);
-
-				snd_seq_ev_set_source (&aev, ports[1]);
-				snd_seq_event_output (seq, &aev);
+				snd_seq_ev_set_controller (&aev, 0, 104+px, color);
 			}
-			else if (x > 9)
+			else if (py >= 1 && py <= 8 && px >= 0 && px <= 8)
 			{
-				if (y == 0)
-				{
-					if (x != 18)
-					{
-		        		snd_seq_ev_set_controller (&aev, 0, 104+x-10, output[x][y]);
-						snd_seq_ev_set_source (&aev, ports[0]);
-						snd_seq_event_output (seq, &aev);
-					}
-				}
-				else
-				{
-					pos.x = x - 10;
-					pos.y = y - 1;
-
-					note = array2pad (pos);
-					snd_seq_ev_set_noteon (&aev, 0, note, output[x][y]);
-
-					snd_seq_ev_set_source (&aev, ports[0]);
-					snd_seq_event_output (seq, &aev);
-				}
+				snd_seq_ev_set_noteon (&aev, 0, (py-1)*16+px, color);
 			}
+			else continue;
+
+			snd_seq_ev_set_source (&aev, ports[pad]);
+			snd_seq_event_output (seq, &aev);
 		}
 	}
 
 	snd_seq_drain_output (seq);
-
-	for (x = 0; x < 19; x++) for (y = 0; y < 9; y++)
-		output_old[x][y] = output[x][y];
 }
 
 void put_color (coord p, int c)
