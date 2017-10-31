@@ -33,17 +33,6 @@
 #define SAMPLE_RATE 48000
 #define MAX_COMP_ARGS 8
 
-#define DO_DUMPS
-
-#ifdef DO_DUMPS
-FILE *output_dump = NULL;
-FILE *input_dump = NULL;
-FILE *playback_dump = NULL;
-
-unsigned long pbt;
-int pbx, pby, pbv;
-#endif
-
 // Odroid-U2: We get xruns while reading the micro-SD if less than 256.
 //            Otherwise, 64 is fine.
 #define PSIZE 60
@@ -260,25 +249,6 @@ button_evt *get_input (void)
 	button_evt *res = NULL;
 	snd_seq_event_t *evp;
 
-#ifdef DO_DUMPS
-	if (playback_dump)
-	{
-		assert (pbt >= dump_timer);	// FIXME
-
-		if (pbt == dump_timer)
-		{
-			res = malloc (sizeof (button_evt));
-			res->p.x = pbx;
-			res->p.y = pby;
-			res->v = pbv;
-
-			fscanf (playback_dump, "%ld %d %d %d\n", &pbt, &pbx, &pby, &pbv);
-		}
-
-		return res;
-	}
-#endif
-
 	pushed = -1;
 
 	snd_seq_event_input (seq, &evp);
@@ -332,13 +302,6 @@ button_evt *get_input (void)
 		res->p.x = x;
 		res->p.y = y;
 		res->v = pushed;
-
-#ifdef DO_DUMPS
-		if (input_dump)
-		{
-			fprintf (input_dump, "%ld %d %d %d\n", dump_timer, x, y, pushed);
-		}
-#endif
 	}
 
 	return res;
@@ -569,13 +532,6 @@ void user_process_audio (void)
 			}
 			a -= res;
 		}
-
-#ifdef DO_DUMPS
-		if (output_dump)
-		{
-			fwrite (samples, sizeof (signed short) * 2, PSIZE, output_dump);
-		}
-#endif
 	}
 	else
 	{
@@ -2516,68 +2472,6 @@ void load_state (void)
 	fclose (f);
 }
 
-#ifdef DO_DUMPS
-
-char tmp_dir[256];
-
-void start_dump (void)
-{
-	char path[256];
-
-	if (input_dump == NULL)
-	{
-		puts ("start dump");
-
-		sprintf (tmp_dir, "dump-%ld", session_timer);
-		mkdir (tmp_dir, 0777);
-		snprintf (path, 256, "%s/input.dump", tmp_dir);
-		input_dump = fopen (path, "w");
-		//snprintf (path, 256, "%s/output.dump", tmp_dir);
-		//output_dump = fopen (path, "w");
-
-		dump_timer = 0;
-	}
-}
-
-void stop_dump (void)
-{
-	char cmd[256];
-
-	if (input_dump)
-	{
-		puts ("stop dump");
-
-		fclose (input_dump);
-		input_dump = NULL;
-		//fclose (output_dump);
-		output_dump = NULL;
-
-		sprintf (cmd, "cp Data/stacy.save '%s'; mv '%s' Data/Dumps; sync", tmp_dir, tmp_dir);
-		system (cmd);
-	}
-}
-
-void start_playback (void)
-{
-	char path[256];
-
-	if (playback_dump == NULL)
-	{
-		puts ("start playback");
-
-		playback_dump = fopen ("Data/input.dump", "r");
-		assert (playback_dump);
-
-		fscanf (playback_dump, "%ld %d %d %d\n", &pbt, &pbx, &pby, &pbv);
-
-		dump_timer = 0;
-	}
-}
-
-// FIXME: write stop_playback()
-
-#endif
-
 //==============================================================================
 // Main function
 
@@ -2922,37 +2816,11 @@ int main (int argc, char *argv[])
 
 				if (ex == 3)
 				{
-#ifdef DO_DUMPS
-					stop_dump();
-#endif
 					load_state();
 					state = S_DEFAULT;
 					inst_page = 0;
 					display_editor();
 				}
-
-#ifdef DO_DUMPS
-				if (ex == 4)
-				{
-					stop_dump();
-					load_state();
-					state = S_DEFAULT;
-					inst_page = 0;
-					display_editor();
-					start_dump();
-				}
-
-				if (ex == 5)
-				{
-					stop_dump();
-					load_state();
-					state = S_DEFAULT;
-					inst_page = 0;
-					display_editor();
-					start_playback();
-					//start_dump();
-				}
-#endif
 			}
 
 			if (in_zone (ec, z_rside))
