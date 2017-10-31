@@ -158,7 +158,7 @@ sig_head *sig_error (void)
 sig_head *sig_dup (sig_head *in)
 {
 	sig_head *out;
-	
+
 	if (in->type == SIG_ERROR)
 		out = in;
 	else
@@ -166,7 +166,7 @@ sig_head *sig_dup (sig_head *in)
 		out = malloc (in->size);
 		memcpy (out, in, in->size);
 	}
-	
+
 	return out;
 }
 
@@ -176,7 +176,7 @@ void compute_signals (void)
 	instance *inst;
 	sig_head *in[MAX_COMP_ARGS];
 	sig_head *out;
-	
+
 	// Compute new buffers
 	for (x=0; x<8; x++) for (y=0; y<64; y++)
 	{
@@ -185,7 +185,7 @@ void compute_signals (void)
 		{
 			for (a = 0; a < inst->c.num_inputs; a++)
 				in[a] = sig_table [inst->inputs[a].x] [inst->inputs[a].y];
-			
+
 			out = (*(inst->c.op)) (in, &inst->state);
 			sig_table2[x][y] = out;
 		}
@@ -194,14 +194,14 @@ void compute_signals (void)
 			sig_table2[x][y] = sig_error();
 		}
 	}
-	
+
 	// Free old buffers
 	for (x=0; x<8; x++) for (y=0; y<64; y++)
 	{
 		if (sig_table[x][y]->type != SIG_ERROR)
 			free (sig_table[x][y]);
 	}
-	
+
 	// Copy back new buffers
 	for (x=0; x<8; x++) for (y=0; y<64; y++)
 	{
@@ -239,10 +239,10 @@ int in_zone (coord c, zone z)
 coord pad2array (int note)
 {
 	coord pos;
-	
+
 	pos.x = note % 16;
 	pos.y = note / 16;
-	
+
 	return pos;
 }
 
@@ -259,12 +259,12 @@ button_evt *get_input (void)
 	int x, y;
 	button_evt *res = NULL;
 	snd_seq_event_t *evp;
-	
+
 #ifdef DO_DUMPS
 	if (playback_dump)
 	{
 		assert (pbt >= dump_timer);	// FIXME
-		
+
 		if (pbt == dump_timer)
 		{
 			res = malloc (sizeof (button_evt));
@@ -274,25 +274,25 @@ button_evt *get_input (void)
 
 			fscanf (playback_dump, "%ld %d %d %d\n", &pbt, &pbx, &pby, &pbv);
 		}
-		
+
 		return res;
 	}
 #endif
 
 	pushed = -1;
-	
+
 	snd_seq_event_input (seq, &evp);
-	
+
 	if (evp == NULL)
 		return NULL;
-	
+
 	if (evp->type == SND_SEQ_EVENT_CONTROLLER)
 	{
 		if (evp->data.control.value == 127)
 			pushed = 1;
 		else
 			pushed = 0;
-		
+
 		if (evp->dest.port == a1port)
 		{
 			x = 10 + evp->data.control.param - 104;
@@ -324,7 +324,7 @@ button_evt *get_input (void)
 			y = 8-pos.x;
 		}
 	}
-	
+
 	if (pushed >= 0)
 	{
 		res = malloc (sizeof (button_evt));
@@ -333,14 +333,14 @@ button_evt *get_input (void)
 		res->p.y = y;
 		res->v = pushed;
 
-#ifdef DO_DUMPS		
+#ifdef DO_DUMPS
 		if (input_dump)
 		{
 			fprintf (input_dump, "%ld %d %d %d\n", dump_timer, x, y, pushed);
 		}
 #endif
 	}
-	
+
 	return res;
 }
 
@@ -357,7 +357,7 @@ void update_output (void)
 		{
 			pos.x = x;
 			pos.y = y;
-			
+
 			if (x == 0)
 			{
 				if (y != 0)
@@ -371,7 +371,7 @@ void update_output (void)
 			{
 				pos.x = 8 - y;
 				pos.y = x - 1;
-				
+
 				note = array2pad (pos);
 				snd_seq_ev_set_noteon (&aev, 0, note, output[x][y]);
 
@@ -403,7 +403,7 @@ void update_output (void)
 			}
 		}
 	}
-	
+
 	snd_seq_drain_output (seq);
 
 	for (x = 0; x < 19; x++) for (y = 0; y < 9; y++)
@@ -418,7 +418,7 @@ void put_color (coord p, int c)
 void display_editor (void)
 {
 	int x, y;
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		if (comp_table[x][y].empty)
@@ -437,7 +437,7 @@ void display_editor (void)
 
 	for (y=0; y<8; y++)
 		output[18][y+1] = C_BLACK;
-	
+
 	output[18][inst_page+1] = C_YELLOW;
 }
 
@@ -450,24 +450,24 @@ snd_pcm_t *handle;
 void user_init (void)
 {
 	int res;
-	
+
 	// MIDI
 	snd_seq_open (&seq, "default", SND_SEQ_OPEN_DUPLEX, 0);
 	snd_seq_set_client_name (seq, "Stacy");
-	
+
 	a1port   = snd_seq_create_simple_port (seq, "Array 1", SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ, SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
 	a2port   = snd_seq_create_simple_port (seq, "Array 2", SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ, SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
 	snd_seq_nonblock (seq, 1);
-	
+
 	snd_seq_connect_from (seq, a1port, 20, 0);
 	snd_seq_connect_to (seq, a1port, 20, 0);
 	snd_seq_connect_from (seq, a2port, 24, 0);
 	snd_seq_connect_to (seq, a2port, 24, 0);
-	
+
 	snd_seq_ev_set_fixed (&aev);
 	snd_seq_ev_set_direct (&aev);
 	snd_seq_ev_set_dest (&aev, SND_SEQ_ADDRESS_SUBSCRIBERS, 0);
-	
+
 	// Reset controllers
 	snd_seq_ev_set_controller (&aev, 0, 0, 0);
 	snd_seq_ev_set_source (&aev, a1port);
@@ -475,16 +475,16 @@ void user_init (void)
 	snd_seq_ev_set_source (&aev, a2port);
 	snd_seq_event_output (seq, &aev);
 	snd_seq_drain_output (seq);
-	
+
 	// Audio
 	snd_pcm_hw_params_t *params;
-	
+
 	res = snd_pcm_open (&handle, "hw:0,0", SND_PCM_STREAM_PLAYBACK, 0);
 
 	if (res == 0)
 	{
 		snd_pcm_hw_params_alloca (&params);
-		
+
 		snd_pcm_hw_params_any (handle, params);
 		snd_pcm_hw_params_set_access (handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
 		snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
@@ -493,7 +493,7 @@ void user_init (void)
 		snd_pcm_hw_params_set_period_size (handle, params, PSIZE, 0);
 		snd_pcm_hw_params_set_buffer_size (handle, params, PSIZE*4);
 		snd_pcm_hw_params (handle, params);
-		
+
 		audio_ok = 1;
 	}
 	else
@@ -511,9 +511,9 @@ void user_process_audio (void)
 	static double time = 0;
 	sig_audio *input;
 	sig_head *px;
-	
+
 	input = silence;
-	
+
 	if (sig_table[7][0] != NULL && sig_table[7][0]->type == SIG_PAIR)
 	{
 		px = (sig_table[7][0] + 1);
@@ -522,27 +522,27 @@ void user_process_audio (void)
 			input = (sig_audio *) (px + 1);
 		}
 	}
-	
+
 	for (a = 0; a < PSIZE; a++)
 	{
 		l = input[a];
 		r = l;
-		
+
 		time += 1.0/SAMPLE_RATE;
-		
+
 		// FIXME: why is my waveform upside-down?
 		l *= -0.2;
 		r *= -0.2;
-		
+
 		if (l < -1) l = -1;
 		if (r < -1) r = -1;
 		if (l > 1) l = 1;
 		if (r > 1) r = 1;
-		
+
 		samples[2*a] = (signed short) (l * 32767);
 		samples[2*a+1] = (signed short) (r * 32767);
 	}
-	
+
 	if (audio_ok)
 	{
 		a = PSIZE;
@@ -572,7 +572,7 @@ void user_process_audio (void)
 
 #ifdef DO_DUMPS
 		if (output_dump)
-		{		
+		{
 			fwrite (samples, sizeof (signed short) * 2, PSIZE, output_dump);
 		}
 #endif
@@ -588,15 +588,15 @@ void user_display_arrays (void)
 	sig_t_ui arr1, arr2;
 	sig_head *px;
 	int x, y;
-	
+
 	arr1 = empty_array;
 	arr2 = empty_array;
-	
+
 	if (sig_table[7][0] != NULL && sig_table[7][0]->type == SIG_PAIR)
 	{
 		px = sig_table[7][0] + 1;
 		px = ((void *) px) + px->size;
-		
+
 		if (px->type == SIG_PAIR)
 		{
 			px = px + 1;
@@ -604,7 +604,7 @@ void user_display_arrays (void)
 			{
 				arr1 = (void *) (px + 1);
 			}
-			
+
 			px = ((void *) px) + px->size;
 			if (px->type == SIG_UI)
 			{
@@ -612,13 +612,13 @@ void user_display_arrays (void)
 			}
 		}
 	}
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		output[x+1][y+1] = arr2[x][y]?C_GREEN:C_BLACK;
 		output[x+10][y+1] = arr1[x][y]?C_GREEN:C_BLACK;
 	}
-	
+
 	for (y=0; y<8; y++)
 		output[18][y+1] = C_BLACK;
 }
@@ -629,9 +629,9 @@ void user_display_arrays (void)
 sig_head *op_identity (sig_head *in[], void **state)
 {
 	sig_head *out;
-	
+
 	out = sig_dup (in[0]);
-	
+
 	return out;
 }
 
@@ -649,7 +649,7 @@ sig_head *op_delay (sig_head *in[], void **state)
 	delay_state *ds;
 	int size;
 	int a;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (delay_state));
@@ -658,16 +658,16 @@ sig_head *op_delay (sig_head *in[], void **state)
 		for (a = 0; a < DELAY; a++)
 			ds->buf[a] = sig_error();
 	}
-	
+
 	ds = *state;
-	
+
 	out = ds->buf[ds->pos];
 	ds->buf[ds->pos] = sig_dup (in[0]);
-	
+
 	ds->pos++;
 	if (ds->pos >= DELAY)
 		ds->pos = 0;
-	
+
 	return out;
 }
 
@@ -708,18 +708,18 @@ sig_head *op_pair (sig_head *in[], void **state)
 {
 	sig_head *e1, *e2, *out;
 	int size;
-	
+
 	e1 = in[0];
 	e2 = in[1];
-	
+
 	size = sizeof (sig_head) + e1->size + e2->size;
 	out = malloc (size);
 	out->type = SIG_PAIR;
 	out->size = size;
-	
+
 	memcpy (((void *) out) + sizeof (sig_head), e1, e1->size);
 	memcpy (((void *) out) + sizeof (sig_head) + e1->size, e2, e2->size);
-	
+
 	return out;
 }
 
@@ -727,7 +727,7 @@ sig_head *op_elem1 (sig_head *in[], void **state)
 {
 	sig_head *px, *out;
 	int size;
-	
+
 	if (in[0]->type != SIG_PAIR)
 	{
 		out = sig_error();
@@ -737,7 +737,7 @@ sig_head *op_elem1 (sig_head *in[], void **state)
 		px = (((void *) in[0]) + sizeof (sig_head));
 		out = sig_dup (px);
 	}
-	
+
 	return out;
 }
 
@@ -745,7 +745,7 @@ sig_head *op_elem2 (sig_head *in[], void **state)
 {
 	sig_head *px, *out;
 	int size;
-	
+
 	if (in[0]->type != SIG_PAIR)
 	{
 		out = sig_error();
@@ -756,7 +756,7 @@ sig_head *op_elem2 (sig_head *in[], void **state)
 		px = ((void *) px) + px->size;
 		out = sig_dup (px);
 	}
-	
+
 	return out;
 }
 
@@ -769,9 +769,9 @@ int s_size = 0;
 void playback_init (void)
 {
 	FILE *f;
-	
+
 	f = fopen ("Data/sample.raw", "r");
-	
+
 	if (f == NULL)
 	{
 		puts ("Warning: could not load Data/sample.raw");
@@ -780,15 +780,15 @@ void playback_init (void)
 		bzero (sample, s_size * 4);
 		return;
 	}
-	
+
 	fseek (f, 0L, SEEK_END);
 	s_size = ftell (f) / 4;
 	fseek(f, 0L, SEEK_SET);
-	
+
 	sample = malloc (s_size * 4);
-	
+
 	fread (sample, 1, s_size*4, f);
-	
+
 	fclose (f);
 }
 
@@ -799,22 +799,22 @@ sig_head *op_playback (sig_head *in[], void **state)
 	int *pos;
 	int size;
 	int a;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (int));
 		pos = *state;
 		*pos = 0;
 	}
-	
+
 	size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 	out = malloc (size);
 	out->type = SIG_AUDIO;
 	out->size = size;
-	
+
 	pos = *state;
 	s = (void *) (out + 1);
-	
+
 	for (a = 0; a < PSIZE; a++)
 	{
 		s[a] = (sig_audio) sample[*pos] / 32768;
@@ -822,7 +822,7 @@ sig_head *op_playback (sig_head *in[], void **state)
 		if (*pos >= s_size * 2)
 			*pos = 0;
 	}
-	
+
 	return out;
 }
 
@@ -832,7 +832,7 @@ sig_head *op_attenuate (sig_head *in[], void **state)
 	sig_t_audio s_out;
 	int size;
 	int a;
-	
+
 	if (in[0]->type != SIG_AUDIO)
 	{
 		out = sig_error();
@@ -840,15 +840,15 @@ sig_head *op_attenuate (sig_head *in[], void **state)
 	else
 	{
 		out = sig_dup (in[0]);
-		
+
 		s_out = (void *) (out + 1);
-		
+
 		for (a = 0; a < PSIZE; a++)
 		{
 			s_out[a] = s_out[a] * 0.7;
 		}
 	}
-	
+
 	return out;
 }
 
@@ -858,7 +858,7 @@ sig_head *op_saturate (sig_head *in[], void **state)
 	sig_t_audio s_out;
 	int size;
 	int a;
-	
+
 	if (in[0]->type != SIG_AUDIO)
 	{
 		out = sig_error();
@@ -866,15 +866,15 @@ sig_head *op_saturate (sig_head *in[], void **state)
 	else
 	{
 		out = sig_dup (in[0]);
-		
+
 		s_out = (void *) (out + 1);
-		
+
 		for (a = 0; a < PSIZE; a++)
 		{
 			s_out[a] = sin (s_out[a]);
 		}
 	}
-	
+
 	return out;
 }
 
@@ -884,7 +884,7 @@ sig_head *op_inverse (sig_head *in[], void **state)
 	sig_t_audio s_out;
 	int size;
 	int a;
-	
+
 	if (in[0]->type != SIG_AUDIO)
 	{
 		out = sig_error();
@@ -892,15 +892,15 @@ sig_head *op_inverse (sig_head *in[], void **state)
 	else
 	{
 		out = sig_dup (in[0]);
-		
+
 		s_out = (void *) (out + 1);
-		
+
 		for (a = 0; a < PSIZE; a++)
 		{
 			s_out[a] = 0.0 - (s_out[a]);
 		}
 	}
-	
+
 	return out;
 }
 
@@ -911,14 +911,14 @@ sig_head *op_add (sig_head *in[], void **state)
 	sig_t_bytebeat ss_in1, ss_in2, ss_out;
 	int size;
 	int a;
-	
+
 	if (in[0]->type == SIG_AUDIO || in[1]->type == SIG_AUDIO)
 	{
 		size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		if (in[0]->type == SIG_AUDIO)
 			s_in1 = (void *) (in[0] + 1);
@@ -928,7 +928,7 @@ sig_head *op_add (sig_head *in[], void **state)
 			s_in2 = (void *) (in[1] + 1);
 		else
 			s_in2 = silence;
-		
+
 		for (a = 0; a < PSIZE; a++)
 		{
 			s_out[a] = s_in1[a] + s_in2[a];
@@ -940,7 +940,7 @@ sig_head *op_add (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_BYTEBEAT;
 		out->size = size;
-		
+
 		ss_out = (void *) (out + 1);
 		if (in[0]->type == SIG_BYTEBEAT)
 			ss_in1 = (void *) (in[0] + 1);
@@ -950,7 +950,7 @@ sig_head *op_add (sig_head *in[], void **state)
 			ss_in2 = (void *) (in[1] + 1);
 		else
 			ss_in2 = silence_bb;
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			ss_out[a] = ss_in1[a] + ss_in2[a];
@@ -958,7 +958,7 @@ sig_head *op_add (sig_head *in[], void **state)
 	}
 	else
 		out = sig_error();
-	
+
 	return out;
 }
 
@@ -969,14 +969,14 @@ sig_head *op_mult (sig_head *in[], void **state)
 	sig_t_bytebeat ss_in1, ss_in2, ss_out;
 	int size;
 	int a;
-	
+
 	if (in[0]->type == SIG_AUDIO || in[1]->type == SIG_AUDIO)
 	{
 		size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		if (in[0]->type == SIG_AUDIO)
 			s_in1 = (void *) (in[0] + 1);
@@ -986,7 +986,7 @@ sig_head *op_mult (sig_head *in[], void **state)
 			s_in2 = (void *) (in[1] + 1);
 		else
 			s_in2 = silence;
-		
+
 		for (a = 0; a < PSIZE; a++)
 		{
 			s_out[a] = s_in1[a] * s_in2[a];
@@ -998,7 +998,7 @@ sig_head *op_mult (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_BYTEBEAT;
 		out->size = size;
-		
+
 		ss_out = (void *) (out + 1);
 		if (in[0]->type == SIG_BYTEBEAT)
 			ss_in1 = (void *) (in[0] + 1);
@@ -1008,7 +1008,7 @@ sig_head *op_mult (sig_head *in[], void **state)
 			ss_in2 = (void *) (in[1] + 1);
 		else
 			ss_in2 = silence_bb;
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			ss_out[a] = ss_in1[a] * ss_in2[a];
@@ -1016,7 +1016,7 @@ sig_head *op_mult (sig_head *in[], void **state)
 	}
 	else
 		out = sig_error();
-	
+
 	return out;
 }
 
@@ -1032,13 +1032,13 @@ typedef struct
 sig_head *op_equalizer (sig_head *in[], void **state)
 {
 	sig_head *out;
-	
+
 	sig_t_audio s_in, s_out;
 	sig_audio b_in[PSIZE], b_low[PSIZE], b_high[PSIZE];
 	eq_state *ds;
 	int size;
 	int a;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (eq_state));
@@ -1047,7 +1047,7 @@ sig_head *op_equalizer (sig_head *in[], void **state)
 		ds->bx = 0;
 		ds->by = 0;
 	}
-	
+
 	ds = *state;
 	if (in[0]->type != SIG_AUDIO)
 	{
@@ -1087,7 +1087,7 @@ sig_head *op_equalizer (sig_head *in[], void **state)
 			s_out[a] = b_low[a] * 13.5 + b_high[a] * 3;
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1101,16 +1101,16 @@ sig_head *op_bb_time (sig_head *in[], void **state)
 	int size;
 	int a;
 	int *time;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (int));
 		time = *state;
 		*time = 0;
 	}
-	
+
 	time = *state;
-	
+
 	size = sizeof (sig_head) + BB_SIZE * sizeof (int);
 	out = malloc (size);
 	out->type = SIG_BYTEBEAT;
@@ -1123,7 +1123,7 @@ sig_head *op_bb_time (sig_head *in[], void **state)
 		s_out[a] = *time;
 		*time = *time + 1;
 	}
-	
+
 	return out;
 }
 
@@ -1133,7 +1133,7 @@ sig_head *op_bb_rshift (sig_head *in[], void **state)
 	sig_t_bytebeat s_out;
 	int size;
 	int a;
-	
+
 	if (in[0]->type != SIG_BYTEBEAT)
 	{
 		out = sig_error();
@@ -1141,15 +1141,15 @@ sig_head *op_bb_rshift (sig_head *in[], void **state)
 	else
 	{
 		out = sig_dup (in[0]);
-		
+
 		s_out = (void *) (out + 1);
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			s_out[a] = s_out[a] >> 1;
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1159,7 +1159,7 @@ sig_head *op_bb_not (sig_head *in[], void **state)
 	sig_t_bytebeat s_out;
 	int size;
 	int a;
-	
+
 	if (in[0]->type != SIG_BYTEBEAT)
 	{
 		out = sig_error();
@@ -1167,15 +1167,15 @@ sig_head *op_bb_not (sig_head *in[], void **state)
 	else
 	{
 		out = sig_dup (in[0]);
-		
+
 		s_out = (void *) (out + 1);
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			s_out[a] = ~ s_out[a];
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1186,7 +1186,7 @@ sig_head *op_bb_or (sig_head *in[], void **state)
 	int size;
 	int a;
 	int i1, i2, o;
-	
+
 	if (in[0]->type != SIG_BYTEBEAT && in[1]->type != SIG_BYTEBEAT)
 	{
 		out = sig_error();
@@ -1197,7 +1197,7 @@ sig_head *op_bb_or (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_BYTEBEAT;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		if (in[0]->type == SIG_BYTEBEAT)
 			s_in1 = (void *) (in[0] + 1);
@@ -1207,13 +1207,13 @@ sig_head *op_bb_or (sig_head *in[], void **state)
 			s_in2 = (void *) (in[1] + 1);
 		else
 			s_in2 = silence_bb;
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			s_out[a] = s_in1[a] | s_in2[a];
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1224,7 +1224,7 @@ sig_head *op_bb_and (sig_head *in[], void **state)
 	int size;
 	int a;
 	int i1, i2, o;
-	
+
 	if (in[0]->type != SIG_BYTEBEAT && in[1]->type != SIG_BYTEBEAT)
 	{
 		out = sig_error();
@@ -1235,7 +1235,7 @@ sig_head *op_bb_and (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_BYTEBEAT;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		if (in[0]->type == SIG_BYTEBEAT)
 			s_in1 = (void *) (in[0] + 1);
@@ -1245,13 +1245,13 @@ sig_head *op_bb_and (sig_head *in[], void **state)
 			s_in2 = (void *) (in[1] + 1);
 		else
 			s_in2 = silence_bb;
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			s_out[a] = s_in1[a] & s_in2[a];
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1262,7 +1262,7 @@ sig_head *op_bb_xor (sig_head *in[], void **state)
 	int size;
 	int a;
 	int i1, i2, o;
-	
+
 	if (in[0]->type != SIG_BYTEBEAT && in[1]->type != SIG_BYTEBEAT)
 	{
 		out = sig_error();
@@ -1273,7 +1273,7 @@ sig_head *op_bb_xor (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_BYTEBEAT;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		if (in[0]->type == SIG_BYTEBEAT)
 			s_in1 = (void *) (in[0] + 1);
@@ -1283,13 +1283,13 @@ sig_head *op_bb_xor (sig_head *in[], void **state)
 			s_in2 = (void *) (in[1] + 1);
 		else
 			s_in2 = silence_bb;
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			s_out[a] = s_in1[a] ^ s_in2[a];
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1300,7 +1300,7 @@ sig_head *op_bb_onetwentyeight (sig_head *in[], void **state)
 	int size;
 	int a;
 	int i1, i2, o;
-	
+
 	size = sizeof (sig_head) + BB_SIZE * sizeof (int);
 	out = malloc (size);
 	out->type = SIG_BYTEBEAT;
@@ -1332,9 +1332,9 @@ sig_head *op_bb_slider (sig_head *in[], void **state)
 	sig_t_bytebeat s_out;
 	int size;
 	int a, x, y;
-	
+
 	double value, rate;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (bb_slider_state));
@@ -1343,7 +1343,7 @@ sig_head *op_bb_slider (sig_head *in[], void **state)
 		ds->old_plus = 0;
 		ds->old_minus = 0;
 	}
-	
+
 	ds = *state;
 
 	size = sizeof (sig_head) + BB_SIZE * sizeof (int);
@@ -1363,7 +1363,7 @@ sig_head *op_bb_slider (sig_head *in[], void **state)
 
 	ds->old_plus = s_in[0][0];
 	ds->old_minus = s_in[0][1];
-	
+
 	value = ds->value;
 
 	for (a = 0; a < BB_SIZE; a++)
@@ -1382,7 +1382,7 @@ sig_head *op_bb_audio (sig_head *in[], void **state)
 	int size;
 	int a, b;
 	sig_audio sample;
-	
+
 	if (in[0]->type != SIG_BYTEBEAT)
 	{
 		out = sig_error();
@@ -1393,10 +1393,10 @@ sig_head *op_bb_audio (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[0] + 1);
-		
+
 		for (a = 0; a < BB_SIZE; a++)
 		{
 			sample = ((sig_audio) (s_in[a] & 0xff)) / 256.0 * 2 - 1;
@@ -1406,7 +1406,7 @@ sig_head *op_bb_audio (sig_head *in[], void **state)
 			}
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1419,19 +1419,19 @@ sig_head *op_array_1 (sig_head *in[], void **state)
 	sig_t_ui s;
 	int size;
 	int x, y;
-	
+
 	size = sizeof (sig_head) + 8 * sizeof (char[8]);
 	out = malloc (size);
 	out->type = SIG_UI;
 	out->size = size;
-	
+
 	s = (void *) (out + 1);
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		s[x][y] = input[x+10][y+1];
 	}
-	
+
 	return out;
 }
 
@@ -1441,19 +1441,19 @@ sig_head *op_array_2 (sig_head *in[], void **state)
 	sig_t_ui s;
 	int size;
 	int x, y;
-	
+
 	size = sizeof (sig_head) + 8 * sizeof (char[8]);
 	out = malloc (size);
 	out->type = SIG_UI;
 	out->size = size;
-	
+
 	s = (void *) (out + 1);
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		s[x][y] = input[x+1][y+1];
 	}
-	
+
 	return out;
 }
 
@@ -1463,23 +1463,23 @@ sig_head *op_ctrl1 (sig_head *in[], void **state)
 	sig_t_ui s;
 	int size;
 	int x, y;
-	
+
 	// FIXME: need to handle variable arrays
 	size = sizeof (sig_head) + 8 * sizeof (char[8]);
 	out = malloc (size);
 	out->type = SIG_UI;
 	out->size = size;
-	
+
 	s = (void *) (out + 1);
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		s[x][y] = 0;
 	}
-	
+
 	s[0][0] = input[10][0];
 	s[0][1] = input[11][0];
-	
+
 	return out;
 }
 
@@ -1489,23 +1489,23 @@ sig_head *op_ctrl2 (sig_head *in[], void **state)
 	sig_t_ui s;
 	int size;
 	int x, y;
-	
+
 	// FIXME: need to handle variable arrays
 	size = sizeof (sig_head) + 8 * sizeof (char[8]);
 	out = malloc (size);
 	out->type = SIG_UI;
 	out->size = size;
-	
+
 	s = (void *) (out + 1);
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		s[x][y] = 0;
 	}
-	
+
 	s[0][0] = input[12][0];
 	s[0][1] = input[13][0];
-	
+
 	return out;
 }
 
@@ -1515,23 +1515,23 @@ sig_head *op_ctrl3 (sig_head *in[], void **state)
 	sig_t_ui s;
 	int size;
 	int x, y;
-	
+
 	// FIXME: need to handle variable arrays
 	size = sizeof (sig_head) + 8 * sizeof (char[8]);
 	out = malloc (size);
 	out->type = SIG_UI;
 	out->size = size;
-	
+
 	s = (void *) (out + 1);
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		s[x][y] = 0;
 	}
-	
+
 	s[0][0] = input[14][0];
 	s[0][1] = input[15][0];
-	
+
 	return out;
 }
 
@@ -1541,23 +1541,23 @@ sig_head *op_ctrl4 (sig_head *in[], void **state)
 	sig_t_ui s;
 	int size;
 	int x, y;
-	
+
 	// FIXME: need to handle variable arrays
 	size = sizeof (sig_head) + 8 * sizeof (char[8]);
 	out = malloc (size);
 	out->type = SIG_UI;
 	out->size = size;
-	
+
 	s = (void *) (out + 1);
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		s[x][y] = 0;
 	}
-	
+
 	s[0][0] = input[16][0];
 	s[0][1] = input[17][0];
-	
+
 	return out;
 }
 
@@ -1567,7 +1567,7 @@ sig_head *op_mirror (sig_head *in[], void **state)
 	sig_t_ui s_in, s_out;
 	int size;
 	int x, y;
-	
+
 	if (in[0]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -1578,16 +1578,16 @@ sig_head *op_mirror (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_UI;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[0] + 1);
-		
+
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			s_out[x][y] = s_in[7-x][y];
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1604,7 +1604,7 @@ sig_head *op_toggle (sig_head *in[], void **state)
 	sig_t_ui s_in, s_out;
 	int size;
 	int x, y;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (toggle_state));
@@ -1612,9 +1612,9 @@ sig_head *op_toggle (sig_head *in[], void **state)
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 			ds->in[x][y] = ds->out[x][y] = 0;
 	}
-	
+
 	ds = *state;
-	
+
 	size = sizeof (sig_head) + 8 * sizeof (char[8]);
 	out = malloc (size);
 	out->type = SIG_UI;
@@ -1625,7 +1625,7 @@ sig_head *op_toggle (sig_head *in[], void **state)
 		s_in = (void *) (in[0] + 1);
 	else
 		s_in = empty_array;
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		if (s_in[x][y] != ds->in[x][y])
@@ -1638,7 +1638,7 @@ sig_head *op_toggle (sig_head *in[], void **state)
 
 		s_out[x][y] = ds->out[x][y];
 	}
-		
+
 	return out;
 }
 
@@ -1648,7 +1648,7 @@ sig_head *op_logic_or (sig_head *in[], void **state)
 	sig_t_ui s_in1, s_in2, s_out;
 	int size;
 	int x, y;
-	
+
 	if (in[0]->type != SIG_UI && in[1]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -1659,7 +1659,7 @@ sig_head *op_logic_or (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_UI;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		if (in[0]->type == SIG_UI)
 			s_in1 = (void *) (in[0] + 1);
@@ -1669,13 +1669,13 @@ sig_head *op_logic_or (sig_head *in[], void **state)
 			s_in2 = (void *) (in[1] + 1);
 		else
 			s_in2 = empty_array;
-		
+
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			s_out[x][y] = s_in1[x][y] | s_in2[x][y];
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1686,7 +1686,7 @@ sig_head *op_note_wrap (sig_head *in[], void **state)
 	int size;
 	int x, y, note;
 	int notes[128];
-	
+
 	if (in[0]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -1697,13 +1697,13 @@ sig_head *op_note_wrap (sig_head *in[], void **state)
 		out = malloc (size);
 		out->type = SIG_UI;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[0] + 1);
-		
+
 		bzero (notes, sizeof (int[128]));
 		bzero (s_out, 8 * sizeof (char[8]));
-		
+
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			if (s_in[x][y] == 1)
@@ -1712,7 +1712,7 @@ sig_head *op_note_wrap (sig_head *in[], void **state)
 				notes[note] = 1;
 			}
 		}
-		
+
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			note = (8 - x) * 3 + (8 - y) * 4 + 46;
@@ -1722,7 +1722,7 @@ sig_head *op_note_wrap (sig_head *in[], void **state)
 			}
 		}
 	}
-	
+
 	return out;
 }
 
@@ -1793,23 +1793,23 @@ sig_head *op_sine_synth (sig_head *in[], void **state)
 	sig_t_audio s_out, s_offset;
 	int size;
 	int a, x, y;
-	
+
 	int note;
 	double freq, t;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (synth_state));
 		ds = *state;
 		ds->time = 0;
 	}
-	
+
 	s_offset = silence;
 	if (in[0]->type == SIG_AUDIO)
 	{
 		s_offset = (void *) (in[0] + 1);
 	}
-	
+
 	if (in[1]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -1818,18 +1818,18 @@ sig_head *op_sine_synth (sig_head *in[], void **state)
 	else
 	{
 		ds = *state;
-		
+
 		size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[1] + 1);
-		
+
 		for (a = 0; a < PSIZE; a++)
 			s_out[a] = 0;
-		
+
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			if (s_in[x][y] == 1)
@@ -1837,7 +1837,7 @@ sig_head *op_sine_synth (sig_head *in[], void **state)
 				note = (8 - x) * 3 + (8 - y) * 4 + 46;
 				freq = 440 * exp (log (2) * (note - 69) / 12);
 				t = ds->time;
-				
+
 				for (a = 0; a < PSIZE; a++)
 				{
 					s_out[a] += sin ((t * 2 * M_PI) * freq);
@@ -1845,11 +1845,11 @@ sig_head *op_sine_synth (sig_head *in[], void **state)
 				}
 			}
 		}
-		
+
 		for (a = 0; a < PSIZE; a++)
 			ds->time += exp (s_offset[a]) / SAMPLE_RATE;
 	}
-	
+
 	return out;
 }
 
@@ -1861,23 +1861,23 @@ sig_head *op_square_synth (sig_head *in[], void **state)
 	sig_t_audio s_out, s_offset;
 	int size;
 	int a, x, y;
-	
+
 	int note;
 	double freq, t;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (synth_state));
 		ds = *state;
 		ds->time = 0;
 	}
-	
+
 	s_offset = silence;
 	if (in[0]->type == SIG_AUDIO)
 	{
 		s_offset = (void *) (in[0] + 1);
 	}
-	
+
 	if (in[1]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -1885,18 +1885,18 @@ sig_head *op_square_synth (sig_head *in[], void **state)
 	else
 	{
 		ds = *state;
-		
+
 		size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[1] + 1);
-		
+
 		for (a = 0; a < PSIZE; a++)
 			s_out[a] = 0;
-		
+
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			if (s_in[x][y] == 1)
@@ -1904,7 +1904,7 @@ sig_head *op_square_synth (sig_head *in[], void **state)
 				note = (8 - x) * 3 + (8 - y) * 4 + 46;
 				freq = 440 * exp (log (2) * (note - 69) / 12);
 				t = ds->time;
-				
+
 				for (a = 0; a < PSIZE; a++)
 				{
 					s_out[a] += (sin ((t * 2 * M_PI) * freq) > 0)?1:-1;
@@ -1912,11 +1912,11 @@ sig_head *op_square_synth (sig_head *in[], void **state)
 				}
 			}
 		}
-		
+
 		for (a = 0; a < PSIZE; a++)
 			ds->time += exp (s_offset[a]) / SAMPLE_RATE;
 	}
-	
+
 	return out;
 }
 
@@ -1928,23 +1928,23 @@ sig_head *op_sawtooth_synth (sig_head *in[], void **state)
 	sig_t_audio s_out, s_offset;
 	int size;
 	int a, x, y;
-	
+
 	int note;
 	double freq, t;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (synth_state));
 		ds = *state;
 		ds->time = 0;
 	}
-	
+
 	s_offset = silence;
 	if (in[0]->type == SIG_AUDIO)
 	{
 		s_offset = (void *) (in[0] + 1);
 	}
-	
+
 	if (in[1]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -1952,18 +1952,18 @@ sig_head *op_sawtooth_synth (sig_head *in[], void **state)
 	else
 	{
 		ds = *state;
-		
+
 		size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[1] + 1);
-		
+
 		for (a = 0; a < PSIZE; a++)
 			s_out[a] = 0;
-		
+
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
 		{
 			if (s_in[x][y] == 1)
@@ -1971,7 +1971,7 @@ sig_head *op_sawtooth_synth (sig_head *in[], void **state)
 				note = (8 - x) * 3 + (8 - y) * 4 + 46;
 				freq = 440 * exp (log (2) * (note - 69) / 12);
 				t = ds->time;
-				
+
 				for (a = 0; a < PSIZE; a++)
 				{
 					s_out[a] += ((t * freq) - floor (t * freq)) * 2 - 1;
@@ -1979,11 +1979,11 @@ sig_head *op_sawtooth_synth (sig_head *in[], void **state)
 				}
 			}
 		}
-		
+
 		for (a = 0; a < PSIZE; a++)
 			ds->time += exp (s_offset[a]) / SAMPLE_RATE;
 	}
-	
+
 	return out;
 }
 
@@ -2002,16 +2002,16 @@ sig_head *op_slider (sig_head *in[], void **state)
 	sig_t_audio s_out;
 	int size;
 	int a, x, y;
-	
+
 	double value, rate;
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (slider_state));
 		ds = *state;
 		ds->value = 0;
 	}
-	
+
 	ds = *state;
 
 	size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
@@ -2041,7 +2041,7 @@ sig_head *op_slider (sig_head *in[], void **state)
 	}
 
 	ds->value = value;
-	
+
 	return out;
 }
 
@@ -2067,17 +2067,17 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 	float polyseg_buffer[PSIZE];
 	int size;
 	int a, x, y;
-	
+
 	osc_sample buf[PSIZE];
 	osc_clock deadline, next_time, next_period, next_slope, period, time, old_time, start;
-	
+
 	double p0, p1, direction;
-	
+
 	int note, note_change;
 	double freq, t;
 	double speed;
 	int notes[128];
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (osc_synth_state));
@@ -2090,13 +2090,13 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 			ds->old_notes[a] = 0;
 		ds->num_notes = 0;
 	}
-	
+
 	s_offset = silence;
 	if (in[0]->type == SIG_AUDIO)
 	{
 		s_offset = (void *) (in[0] + 1);
 	}
-	
+
 	if (in[1]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -2104,15 +2104,15 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 	else
 	{
 		ds = *state;
-		
+
 		size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[1] + 1);
-		
+
 		//********************
 		bzero (notes, sizeof (int[128]));
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
@@ -2123,11 +2123,11 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 				notes[note] = 1;
 			}
 		}
-		
+
 		speed = exp (s_offset[0]);
 		start = ds->time + ((double) PSIZE / SAMPLE_RATE);
 		deadline = ds->time + ((double) PSIZE / SAMPLE_RATE) * 2;
-		
+
 		p0 = ds->seg.p0;
 		note_change = 0;
 		for (a=0; a<128; a++)
@@ -2136,9 +2136,9 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 			{
 				note = a;
 				freq = 440 * exp (log (2.00001) * (note - 69) / 12);
-				
+
 				p0 += ((start * freq * speed) - floor (start * freq * speed)) < 0.5 ? BUG_AMP : -BUG_AMP;
-				
+
 				ds->old_notes[a] = 1;
 				ds->num_notes++;
 				note_change = 1;
@@ -2147,30 +2147,30 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 			{
 				note = a;
 				freq = 440 * exp (log (2.00001) * (note - 69) / 12);
-				
+
 				p0 -= ((start * freq * speed) - floor (start * freq * speed)) < 0.5 ? BUG_AMP : -BUG_AMP;
-				
+
 				ds->old_notes[a] = 0;
 				ds->num_notes--;
 				note_change = 1;
 			}
 		}
-		
+
 		if (note_change)
 		{
 			// printf ("p0: %f, p1: %f\n", p0, p1);
 			ds->seg.p0 = p0;
 			ds->seg.time = start;
-			
+
 			if (ds->num_notes == 0 && abs (p0) > 0.0000001)
 			{
 				puts ("Drift detected, correcting...");
 				ds->seg.p0 = 0;
 			}
-			
+
 			osc_update_stream (ds->st, ds->seg);
 		}
-		
+
 		// FIXME: Two events can be exactly simultaneous!
 		next_time = INFINITY;
 		for (a=0; a<128; a++)
@@ -2193,7 +2193,7 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 				}
 			}
 		}
-		
+
 		while (next_time < deadline)
 		{
 			//printf ("%f %f %f\n", ds->seg.p0, ds->seg.p1, next_slope);
@@ -2203,7 +2203,7 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 
 			osc_update_stream (ds->st, ds->seg);
 			//printf ("%f %f %f\n", ds->time, ds->seg.p0, ds->seg.p1);
-			
+
 			next_time = INFINITY;
 			for (a=0; a<128; a++)
 			{
@@ -2226,20 +2226,20 @@ sig_head *op_bl_square_synth (sig_head *in[], void **state)
 				}
 			}
 		}
-		
+
 		osc_render_stream (ds->st, PSIZE, polyseg_buffer);
 		for (a = 0; a < PSIZE; a++)
 		{
 			s_out[a] = (sig_audio) polyseg_buffer[a];
 		}
-		
+
 		//********************
-	 
+
 		//for (a = 0; a < PSIZE; a++)
 		//	ds->time += (s_offset[a] + 1.0) / SAMPLE_RATE;
 		ds->time += (double) PSIZE / SAMPLE_RATE;
 	}
-	
+
 	return out;
 }
 
@@ -2252,17 +2252,17 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 	float polyseg_buffer[PSIZE];
 	int size;
 	int a, x, y;
-	
+
 	osc_sample buf[PSIZE];
 	osc_clock deadline, next_time, next_period, next_slope, period, time, old_time, start;
-	
+
 	double p0, p1;
-	
+
 	int note, note_change;
 	double freq, t;
 	double speed;
 	int notes[128];
-	
+
 	if (! *state)
 	{
 		*state = malloc (sizeof (osc_synth_state));
@@ -2275,13 +2275,13 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 			ds->old_notes[a] = 0;
 		ds->num_notes = 0;
 	}
-	
+
 	s_offset = silence;
 	if (in[0]->type == SIG_AUDIO)
 	{
 		s_offset = (void *) (in[0] + 1);
 	}
-	
+
 	if (in[1]->type != SIG_UI)
 	{
 		out = sig_error();
@@ -2289,15 +2289,15 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 	else
 	{
 		ds = *state;
-		
+
 		size = sizeof (sig_head) + PSIZE * sizeof (sig_audio);
 		out = malloc (size);
 		out->type = SIG_AUDIO;
 		out->size = size;
-		
+
 		s_out = (void *) (out + 1);
 		s_in = (void *) (in[1] + 1);
-		
+
 		//********************
 		bzero (notes, sizeof (int[128]));
 		for (x=0; x<8; x++) for (y=0; y<8; y++)
@@ -2308,11 +2308,11 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 				notes[note] = 1;
 			}
 		}
-		
+
 		speed = exp (s_offset[0]);
 		start = ds->time + ((double) PSIZE / SAMPLE_RATE);
 		deadline = ds->time + ((double) PSIZE / SAMPLE_RATE) * 2;
-		
+
 		p0 = ds->seg.p0 + ds->seg.p1 * (start - ds->seg.time);
 		p1 = ds->seg.p1;
 		note_change = 0;
@@ -2322,10 +2322,10 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 			{
 				note = a;
 				freq = 440 * exp (log (2.00001) * (note - 69) / 12);
-				
+
 				p0 += BUG_AMP * (((start * freq * speed) - floor (start * freq * speed)) * 2 - 1);
 				p1 += BUG_AMP * 2.0 * freq * speed;
-				
+
 				ds->old_notes[a] = 1;
 				ds->num_notes++;
 				note_change = 1;
@@ -2334,33 +2334,33 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 			{
 				note = a;
 				freq = 440 * exp (log (2.00001) * (note - 69) / 12);
-				
+
 				p0 -= BUG_AMP * (((start * freq * speed) - floor (start * freq * speed)) * 2 - 1);
 				p1 -= BUG_AMP * 2.0 * freq * speed;
-				
+
 				ds->old_notes[a] = 0;
 				ds->num_notes--;
 				note_change = 1;
 			}
 		}
-		
+
 		if (note_change)
 		{
 			// printf ("p0: %f, p1: %f\n", p0, p1);
 			ds->seg.p0 = p0;
 			ds->seg.p1 = p1;
 			ds->seg.time = start;
-			
+
 			if (ds->num_notes == 0 && abs (p0) > 0.0000001)
 			{
 				puts ("Drift detected, correcting...");
 				ds->seg.p0 = 0;
 				ds->seg.p1 = 0;
 			}
-			
+
 			osc_update_stream (ds->st, ds->seg);
 		}
-		
+
 		// FIXME: Two events can be exactly simultaneous!
 		next_time = INFINITY;
 		for (a=0; a<128; a++)
@@ -2379,7 +2379,7 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 				}
 			}
 		}
-		
+
 		while (next_time < deadline)
 		{
 			//printf ("%f %f %f\n", ds->seg.p0, ds->seg.p1, next_slope);
@@ -2389,7 +2389,7 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 
 			osc_update_stream (ds->st, ds->seg);
 			//printf ("%f %f %f\n", ds->time, ds->seg.p0, ds->seg.p1);
-			
+
 			next_time = INFINITY;
 			for (a=0; a<128; a++)
 			{
@@ -2408,20 +2408,20 @@ sig_head *op_bl_sawtooth_synth (sig_head *in[], void **state)
 				}
 			}
 		}
-		
+
 		osc_render_stream (ds->st, PSIZE, polyseg_buffer);
 		for (a = 0; a < PSIZE; a++)
 		{
 			s_out[a] = (sig_audio) polyseg_buffer[a];
 		}
-		
+
 		//********************
-		
+
 		//for (a = 0; a < PSIZE; a++)
 		//	ds->time += (s_offset[a] + 1.0) / SAMPLE_RATE;
 		ds->time += (double) PSIZE / SAMPLE_RATE;
 	}
-	
+
 	return out;
 }
 
@@ -2433,9 +2433,9 @@ void save_state (void)
 	int x, y, a;
 	instance i;
 	FILE *f;
-	
+
 	puts ("save");
-	
+
 	mkdir ("Data", 0777);
 	f = fopen ("Data/stacy.save", "w");
 	fprintf (f, "Stacy v%s save file\n", VERSION);
@@ -2470,7 +2470,7 @@ void load_state (void)
 	int px, py, pv;
 	instance *i;
 	char buf[256];
-	
+
 	puts ("load");
 
 	f = fopen ("Data/stacy.save", "r");
@@ -2481,29 +2481,29 @@ void load_state (void)
 		puts ("Error: wrong save version");
 		return;
 	}
-	
+
 	bzero (inst_table, sizeof (inst_table));
-	
+
 	for (y=0; y<64; y++) for (x=0; x<8; x++)
 	{
 		i = &(inst_table[x][y]);
 		i->empty = 1;
 		i->state = NULL;
 	}
-	
+
 	for (y=0; y<64; y++) for (x=0; x<8; x++)
 	{
 		fscanf (f, "(%d %d) %d ", &py, &px, &pv);
 		assert (px == x && py == y);
-		
+
 		if (pv)
 		{
 			i = &(inst_table[x][y]);
 			i->empty = 0;
-			
+
 			fscanf (f, "(%d %d) [ ", &py, &px);
 			i->c = comp_table[px][py];
-			
+
 			for (a=0; a<MAX_COMP_ARGS; a++)
 			{
 				fscanf (f, "(%d %d) ", &py, &px);
@@ -2534,7 +2534,7 @@ void start_dump (void)
 		input_dump = fopen (path, "w");
 		//snprintf (path, 256, "%s/output.dump", tmp_dir);
 		//output_dump = fopen (path, "w");
-		
+
 		dump_timer = 0;
 	}
 }
@@ -2542,7 +2542,7 @@ void start_dump (void)
 void stop_dump (void)
 {
 	char cmd[256];
-	
+
 	if (input_dump)
 	{
 		puts ("stop dump");
@@ -2567,9 +2567,9 @@ void start_playback (void)
 
 		playback_dump = fopen ("Data/input.dump", "r");
 		assert (playback_dump);
-		
+
 		fscanf (playback_dump, "%ld %d %d %d\n", &pbt, &pbx, &pby, &pbv);
-		
+
 		dump_timer = 0;
 	}
 }
@@ -2592,73 +2592,73 @@ void start_playback (void)
 int main (int argc, char *argv[])
 {
 	int x, y;
-	
+
 	printf ("Stacy %s started...\n", VERSION);
-	
+
 	playback_init();
 	user_init();
 	osc_init (SAMPLE_RATE);
-	
+
 	for (x=0; x<19; x++) for (y=0; y<9; y++)
 	{
 		input[x][y] = 0;
 		output[x][y] = 0;
 	}
-	
+
 	for (x=0; x<8; x++) for (y=0; y<8; y++)
 	{
 		comp_table[x][y].empty = 1;
 		comp_table[x][y].p.x = x;
 		comp_table[x][y].p.y = y;
 	}
-	
+
 	// Line 1: Inputs
 	// Playback
 	comp_table[0][0].empty = 0;
 	comp_table[0][0].num_inputs = 0;
 	comp_table[0][0].op = op_playback;
-	
+
 	// Array #1
 	comp_table[1][0].empty = 0;
 	comp_table[1][0].num_inputs = 0;
 	comp_table[1][0].op = op_array_1;
-	
+
 	// Array #2
 	comp_table[2][0].empty = 0;
 	comp_table[2][0].num_inputs = 0;
 	comp_table[2][0].op = op_array_2;
-	
+
 	// Control 1
 	comp_table[4][0].empty = 0;
 	comp_table[4][0].num_inputs = 0;
 	comp_table[4][0].op = op_ctrl1;
-	
+
 	// Control 2
 	comp_table[5][0].empty = 0;
 	comp_table[5][0].num_inputs = 0;
 	comp_table[5][0].op = op_ctrl2;
-	
+
 	// Control 3
 	comp_table[6][0].empty = 0;
 	comp_table[6][0].num_inputs = 0;
 	comp_table[6][0].op = op_ctrl3;
-	
+
 	// Control 4
 	comp_table[7][0].empty = 0;
 	comp_table[7][0].num_inputs = 0;
 	comp_table[7][0].op = op_ctrl4;
-	
+
 	// Line 2: Generic components
 	// Identity
 	comp_table[0][1].empty = 0;
 	comp_table[0][1].num_inputs = 1;
 	comp_table[0][1].op = op_identity;
-	
+
 	// Delay
 	comp_table[1][1].empty = 0;
 	comp_table[1][1].num_inputs = 1;
 	comp_table[1][1].op = op_delay;
-	
+
 	// Synchronous delay
 	comp_table[2][1].empty = 0;
 	comp_table[2][1].num_inputs = 1;
@@ -2685,12 +2685,12 @@ int main (int argc, char *argv[])
 	comp_table[0][3].empty = 0;
 	comp_table[0][3].num_inputs = 1;
 	comp_table[0][3].op = op_attenuate;
-	
+
 	// Inversion
 	comp_table[1][3].empty = 0;
 	comp_table[1][3].num_inputs = 1;
 	comp_table[1][3].op = op_inverse;
-	
+
 	// Addition
 	comp_table[3][3].empty = 0;
 	comp_table[3][3].num_inputs = 2;
@@ -2705,12 +2705,12 @@ int main (int argc, char *argv[])
 	comp_table[6][3].empty = 0;
 	comp_table[6][3].num_inputs = 1;
 	comp_table[6][3].op = op_saturate;
-	
+
 	// Equalizer
 	comp_table[7][3].empty = 0;
 	comp_table[7][3].num_inputs = 1;
 	comp_table[7][3].op = op_equalizer;
-	
+
 	// Line 5: UI components
 	// mirror
 	comp_table[0][4].empty = 0;
@@ -2799,22 +2799,22 @@ int main (int argc, char *argv[])
 	comp_table[7][7].empty = 0;
 	comp_table[7][7].num_inputs = 1;
 	comp_table[7][7].op = op_bb_audio;
-	
+
 	for (x=0; x<8; x++) for (y=0; y<64; y++)
 	{
 		inst_table[x][y].empty = 1;
 	}
-	
+
 	display_editor();
-	
+
 	sig_error_c.type = SIG_ERROR;
 	sig_error_c.size = sizeof (sig_head);
-	
+
 	for (x=0; x<8; x++) for (y=0; y<64; y++)
 	{
 		sig_table[x][y] = sig_error();
 	}
-	
+
 	inst_page = 0;
 
 	int a;
@@ -2827,16 +2827,16 @@ int main (int argc, char *argv[])
 	int current_input;
 	sig_t_bytebeat px;
 	int bbv;
-	
+
 	for (;;)
 	{
 		session_timer++;
 		dump_timer++;
-		
+
 		user_process_audio();	// Blocking
 
 		compute_signals();
-		
+
 		evx = get_input();
 
 		// Controlers
@@ -2844,13 +2844,13 @@ int main (int argc, char *argv[])
 		{
 			input[evx->p.x][evx->p.y] = evx->v;
 		}
-		
+
 		// Timeline
 		if (sig_table[0][0] != NULL && sig_table[0][0]->type == SIG_BYTEBEAT)
 		{
 			px = (void *) (sig_table[0][0] + 1);
 			bbv = px[0];
-			
+
 			bbv = bbv >> 12;
 			for (a = 0; a < 15; a++)
 			{
@@ -2865,13 +2865,13 @@ int main (int argc, char *argv[])
 				output[17-a][0] = C_BLACK;
 			}
 		}
-		
+
 		if (state == S_USER)
 		{
 			// User mode
-			
+
 			user_display_arrays();
-			
+
 			while (evx)
 			{
 				if (evx->p.x == 1 && evx->p.y == 0)
@@ -2888,21 +2888,21 @@ int main (int argc, char *argv[])
 				{
 					input[evx->p.x][evx->p.y] = evx->v;
 				}
-				
+
 				free (evx);
 				evx = get_input();
 			}
 		}
-		
+
 		else if (evx)
 		{
 			// Editor mode
-			
+
 			ex = evx->p.x;
 			ey = evx->p.y;
 			ev = evx->v;
 			ec = evx->p;
-			
+
 			// Utility mode (safety)
 			if (in_zone (ec, z_lup) && ex == 8)
 			{
@@ -2911,7 +2911,7 @@ int main (int argc, char *argv[])
 					else
 						state = S_DEFAULT;
 			}
-			
+
 			// Save, Load and dumps
 			if (state == S_UTIL && in_zone (ec, z_lup) && ev == 1)
 			{
@@ -2941,7 +2941,7 @@ int main (int argc, char *argv[])
 					display_editor();
 					start_dump();
 				}
-				
+
 				if (ex == 5)
 				{
 					stop_dump();
@@ -2954,7 +2954,7 @@ int main (int argc, char *argv[])
 				}
 #endif
 			}
-		
+
 			if (in_zone (ec, z_rside))
 			{
 				if (ev == 1)
@@ -3027,7 +3027,7 @@ int main (int argc, char *argv[])
 						state = S_USER;
 					}
 					break;
-				
+
 				case S_INSTANTIATE:
 					if (in_zone (ec, z_right))
 					{
@@ -3048,7 +3048,7 @@ int main (int argc, char *argv[])
 						state = S_DEFAULT;
 					}
 					break;
-				
+
 				case S_INSTANTIATE2:
 					if (in_zone (ec, z_right))
 					{
@@ -3082,7 +3082,7 @@ int main (int argc, char *argv[])
 						state = S_DEFAULT;
 					}
 					break;
-				
+
 				case S_DELETE:
 					if (in_zone (ec, z_right))
 					{
@@ -3110,10 +3110,10 @@ int main (int argc, char *argv[])
 					}
 					break;
 			}
-			
+
 			free (evx);
 		}
-		
+
 		update_output();
 	}
 }
