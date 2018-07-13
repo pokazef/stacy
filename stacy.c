@@ -328,6 +328,12 @@ void update_output (void)
 		}
 	}
 
+	// Quick hack to reconnect buggy keypads...
+	snd_seq_connect_from (seq, ports[0], 20 + 4 * 0, 0);
+	snd_seq_connect_to   (seq, ports[0], 20 + 4 * 0, 0);
+	snd_seq_connect_from (seq, ports[1], 20 + 4 * 1, 0);
+	snd_seq_connect_to   (seq, ports[1], 20 + 4 * 1, 0);
+
 	snd_seq_drain_output (seq);
 }
 
